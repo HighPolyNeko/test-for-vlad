@@ -1,0 +1,38 @@
+# CI: запускается на каждый PR и на каждый пуш в main.
+# Имя job'а "proverka" указано в правилах защиты main как обязательная проверка (урок 15).
+name: Проверка
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  proverka:
+    name: proverka
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Нет файлов .env (секреты не коммитим, урок 14)
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$'; then
+            echo "::error::Найден .env — секреты не коммитим (урок 14)"
+            exit 1
+          fi
+
+      - name: Нет файлов больше 1 МБ (для больших файлов есть Git LFS)
+        run: |
+          big=$(git ls-files -z | xargs -0 du -k | awk '$1 > 1024 {print $2}')
+          if [ -n "$big" ]; then
+            echo "::error::Слишком большие файлы: $big"
+            exit 1
+          fi
+
+      - name: Нет забытых маркеров конфликта (урок 5)
+        run: |
+          # в lessons/ маркеры встречаются как примеры — их не проверяем
+          if git grep -nE '^(<<<<<<<|>>>>>>>)( |$)' -- ':!lessons/'; then
+            echo "::error::Забытые маркеры конфликта"
+            exit 1
+          fi
