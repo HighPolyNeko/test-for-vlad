@@ -40,11 +40,11 @@ git switch lesson/branches
 # 4. Что изменилось?
 git log --oneline -3
 
-# 5. Сравни с main
-git diff main..lesson/branches
+# 5. Сравни с коммитом, от которого ветка отделилась
+git diff e3af89c lesson/branches
 
 # 6. Какие файлы отличаются?
-git diff main..lesson/branches --name-only
+git diff e3af89c lesson/branches --name-only
 
 # 7. Вернись в main
 git switch main
@@ -53,52 +53,57 @@ git switch main
 **Что понять:**
 - Каждая ветка — **независимая цепочка коммитов**.
 - Две ветки могут расходиться (diverge) — и это нормально!
-- `git diff main..branch` показывает, что в `branch` кроме `main`.
+- `git diff A B` показывает, чем отличаются два коммита или две ветки.
 
 ---
 
 ## Упражнение 3: Слияние без конфликтов
 
-```bash
-# 1. Убедись, что в main
-git branch
+В `main` все уроки уже влиты через PR. Поэтому для тренировки создадим свою ветку
+от **старого** коммита, где урока 3 ещё не было, и сольём урок туда сами:
 
-# 2. Слей ветку про ветки
-git merge lesson/branches
+```bash
+# 1. Своя ветка от коммита e3af89c (там только уроки 1–2)
+git switch -c trening-merge e3af89c
+ls lessons              # урока 3 нет
+
+# 2. Вливаем ветку с уроком про ветки
+git merge origin/lesson/branches
+ls lessons              # урок 3 появился!
 
 # 3. Посмотри историю
 git log --oneline --graph -5
 
-# 4. Вернись на шаг назад (undo merge)
-git reset --hard HEAD~1
+# 4. Вернись в main и удали тренировочную ветку
+git switch main
+git branch -D trening-merge
 ```
 
 **Что понять:**
 - `git merge` **вливает одну ветку в текущую**.
-- Если нет конфликтов — происходит автоматически.
-- `git reset --hard HEAD~1` отменяет последний коммит (осторожнее с этим!).
+- Если конфликтов нет, всё происходит автоматически.
+- Тренировочные ветки не жалко: сделал, посмотрел, удалил. `main` при этом не трогаешь.
 
 ---
 
 ## Упражнение 4: Конфликт (основное!)
 
+Повторим конфликт из [PR #4](../../pull/4) у себя, в тренировочной ветке:
+
 ```bash
-# 1. Слей первый вариант покупок
-git merge lesson/conflicts-part1
+# 1. Своя ветка от варианта «Сыр»
+git switch -c trening-conflict origin/lesson/conflicts-part1
 
-# 2. Посмотри историю
-git log --oneline --graph -3
+# 2. Вливаем вариант «Масло» (коммит dc33333, до того как конфликт разрешили)
+git merge dc33333
 
-# 3. Попробуй слить второй вариант
-git merge lesson/conflicts-part2
-
-# 4. Что произойдёт?
+# 3. Что произойдёт?
 git status
 
-# 5. Посмотри конфликт
+# 4. Посмотри конфликт
 cat pokupki.md
 
-# 6. Или через редактор
+# 5. Или через редактор
 code pokupki.md
 ```
 
@@ -108,12 +113,12 @@ code pokupki.md
 - Сыр
 =======
 - Масло
->>>>>>> lesson/conflicts-part2
+>>>>>>> dc33333
 ```
 
 Это значит:
 - **HEAD** (твой текущий коммит) имеет `- Сыр`
-- **lesson/conflicts-part2** имеет `- Масло`
+- **dc33333** (то, что вливаем) имеет `- Масло`
 
 ### Разрешение конфликта
 
@@ -160,7 +165,7 @@ git commit -m "feat: добавил свою фишку"
 # 4. Пуш
 git push -u origin my-feature
 
-# 5. Иди на GitHub
+# 5. Иди на GitHub (пушить можно, если тебя добавили в Collaborators репозитория)
 # Там должна появиться кнопка "Compare & pull request"
 ```
 
