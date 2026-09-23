@@ -1,7 +1,7 @@
 # Урок 4. Push и Pull Request
 
 **Push** — отправить твои коммиты на GitHub.  
-**Pull Request** (PR) — просьба вбить твою ветку в `main`.
+**Pull Request** (PR) — просьба влить твою ветку в `main`.
 
 ## Процесс
 
@@ -13,7 +13,7 @@
 git push -u origin feature/new-page
 ```
 
-`-u` означает: запомни, что `origin/feature/new-page` — вверх по течению.
+`-u` связывает твою локальную ветку с веткой на GitHub (`origin/feature/new-page`).
 Следующий раз просто `git push`.
 
 ### 2. Pull Request на GitHub
@@ -49,6 +49,6 @@ main:  ○─────────────○  (слита ветка fea
 > ⚠️ После мержа не забудь:
 > ```bash
 > git switch main
-> git pull          # забрать мержанные коммиты
+> git pull          # забрать влитые коммиты
 > git branch -d feature/new-page  # удалить локальную ветку
 > ```
