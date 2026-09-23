@@ -1,0 +1,5 @@
+# настройки IDE (JetBrains)
+.idea/
+
+# любые логи
+*.log
