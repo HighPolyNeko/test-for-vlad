@@ -79,3 +79,120 @@ git revert <hash-revert-коммита>
 1. PR «Совет про push» — в шпаргалку попал **вредный** совет «если пуш не проходит, делай `git push --force`».
 2. PR «Revert …» — этот мерж откатили через `git revert -m 1`. Совет исчез, а история осталась честной:
    видно и сам ошибочный мерж, и его откат.
+
+---
+
+## 🛠 Сделай сам
+
+Подготовка: ветка с тремя коммитами.
+
+```bash
+git switch -c trening-8 main
+for i in 1 2 3; do echo "строка $i" >> otmena.md; git add otmena.md; git commit -m "коммит $i"; done
+git log --oneline -3
+```
+
+### Часть 1. `reset --soft` — склеить коммиты
+
+**Зачем:** наделал 3 мелких коммита, а по смыслу это одно изменение. Нужно склеить их до пуша.
+
+```bash
+git reset --soft HEAD~2
+git log --oneline -2          # остался только "коммит 1"
+git status                    # otmena.md ЗЕЛЁНЫЙ — изменения коммитов 2 и 3 лежат в staging
+git commit -m "коммиты 2 и 3 одним"
+git log --oneline -3
+```
+
+✅ Два коммита: `коммит 1` и `коммиты 2 и 3 одним`. В файле по-прежнему 3 строки.
+
+### Часть 2. `reset` (mixed) — переразложить по-другому
+
+**Зачем:** в один коммит попало два несвязанных изменения, хочешь разбить на два.
+
+```bash
+git reset HEAD~1
+git status                    # otmena.md КРАСНЫЙ — изменения в файле, но не в staging
+cat otmena.md                 # все 3 строки на месте
+git commit -am "вернул как было"
+```
+
+### Часть 3. `reset --hard` — выкинуть всё
+
+**Зачем:** эксперимент не удался, хочешь «как будто ничего не было».
+
+```bash
+git reset --hard HEAD~1
+cat otmena.md                 # только "строка 1" — изменения стёрты из файлов
+git reset --hard ORIG_HEAD    # фух, вернули (ORIG_HEAD = где ветка была до reset)
+cat otmena.md                 # 3 строки
+```
+
+✅ **Сведи в таблицу для себя:** куда делись изменения после `--soft`, `--mixed` и `--hard`?
+
+### Часть 4. `amend` — поправить последний коммит
+
+```bash
+git log --oneline -1                       # запомни хеш
+git commit --amend -m "вернул 3 строки"
+git log --oneline -1                       # хеш ДРУГОЙ — это новый коммит
+```
+
+**Зачем:** опечатка в сообщении или забыл добавить файл. Работает, только пока не запушил.
+
+### Часть 5. `revert` — отмена в общей ветке
+
+**Зачем:** плохой коммит уже в `main`, и его скачали коллеги. Переписать историю нельзя, можно только добавить «антикоммит».
+
+```bash
+git revert HEAD --no-edit
+git log --oneline -2          # новый коммит "Revert ..." — старый никуда не делся
+cat otmena.md                 # строк 2 и 3 нет
+```
+
+### Часть 6. Ловушка: revert мержа и повторный мерж
+
+**Зачем:** это реальный сценарий из жизни. Фичу влили, она сломала прод, её откатили. Через день
+фичу починили, мержат снова, а изменения… не приезжают. Разберёмся, почему.
+
+```bash
+git switch -c trening-8-oplata
+echo "Оплата картой" > oplata.md
+git add oplata.md && git commit -m "feat: оплата"
+
+git switch trening-8
+git merge --no-ff trening-8-oplata -m "Merge: оплата"
+ls oplata.md                                 # есть
+
+# прод упал! откатываем мерж:
+git revert -m 1 HEAD --no-edit
+ls oplata.md                                 # нет — откатили
+
+# в ветке фичи починили баг:
+git switch trening-8-oplata
+echo "Проверка суммы" > proverka.md
+git add proverka.md && git commit -m "fix: проверка суммы"
+
+git switch trening-8
+git merge --no-ff trening-8-oplata -m "Merge: оплата (исправленная)"
+ls                                           # proverka.md есть, а oplata.md — НЕТ!
+```
+
+`feat: оплата` git считает уже влитым: он есть в истории. Наш revert его отменил, поэтому при повторном
+мерже приехал только новый коммит. Лечится так: **revert того revert'а**.
+
+```bash
+git log --oneline -4                         # найди хеш коммита "Revert "Merge: оплата""
+git revert <хеш revert-коммита> --no-edit
+ls                                           # oplata.md вернулся
+```
+
+✅ **Проверь себя:** в ветке есть и `oplata.md`, и `proverka.md`. `git lg -8` показывает всю цепочку:
+мерж → revert → мерж → revert revert'а.
+
+**Уборка:**
+
+```bash
+git switch main
+git branch -D trening-8 trening-8-oplata
+```

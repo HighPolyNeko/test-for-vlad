@@ -75,7 +75,7 @@ git worktree remove ../hotfix
 ## clean — удалить мусор
 
 ```bash
-git clean -n     # ПОКАЗАТЬ, что будет удалено (всегда сначала так!)
+git clean -nd    # ПОКАЗАТЬ, что будет удалено, включая папки (всегда сначала так!)
 git clean -fd    # удалить неотслеживаемые файлы и папки
 git clean -fdx   # + игнорируемые (.gitignore) — например, build/ и node_modules/
 ```
@@ -114,3 +114,85 @@ Windows использует `CRLF`, Linux/macOS — `LF`. Если не дог�
 | `git config --global alias.lg "log --oneline --graph --all"` | алиасы: теперь `git lg` |
 | `git commit -S` | подписанный коммит (GPG/SSH), на GitHub будет значок *Verified* |
 | `git add -p` | добавлять в коммит не весь файл, а отдельные куски |
+
+---
+
+## 🛠 Сделай сам
+
+### Часть 1. bisect
+
+Выполни пример из раздела «👀 Вживую» выше: сначала руками (good/bad), потом через `bisect run`.
+
+**Зачем:** «вчера работало, сегодня нет, между ними 40 коммитов от пяти человек». Смотреть каждый
+глазами — полдня работы, bisect справится за 6 шагов.
+
+✅ Оба способа должны найти один и тот же коммит. Посмотри на его сообщение: по нему ни за что не
+догадаешься, что он что-то сломал. Так и бывает в жизни.
+
+### Часть 2. «Кто и когда это удалил?»
+
+**Зачем:** в коде была строчка, теперь её нет, и надо понять, почему её убрали.
+
+```bash
+git log -S "push --force" --oneline -- cheatsheet.md
+```
+
+Найдутся два коммита: один **добавил** вредный совет, второй его **удалил** (revert из урока 8).
+`-S` ищет коммиты, где количество вхождений строки изменилось.
+
+```bash
+git blame -L 36,40 lessons/04-pull-request.md    # кто последним трогал строки 36–40
+```
+
+Там будет фикс статусов ревью: тот самый коммит, который потом переносили cherry-pick'ом.
+
+### Часть 3. worktree
+
+**Зачем:** нужно срочно глянуть или поправить `main`, но у тебя открыта ветка с недоделкой, а stash делать не хочется.
+
+```bash
+git worktree add ../hotfix-papka main              # ошибка! main уже открыт в основной папке
+git worktree add -b trening-hotfix ../hotfix-papka main   # так можно: новая ветка от main
+ls ../hotfix-papka                                  # полноценная рабочая папка
+git worktree list
+git worktree remove ../hotfix-papka
+git branch -D trening-hotfix
+```
+
+### Часть 4. Hook, который не пускает плохие сообщения
+
+**Зачем:** в команде договорились писать коммиты по Conventional Commits (урок 14). Хук напомнит сам.
+
+```bash
+cat > .git/hooks/commit-msg << 'HOOK'
+#!/bin/sh
+if ! grep -qE '^(feat|fix|docs|chore|refactor|test)(\(.+\))?!?: ' "$1"; then
+  echo "❌ Нужен формат: feat: ..., fix: ..., docs: ..."
+  exit 1
+fi
+HOOK
+chmod +x .git/hooks/commit-msg
+
+git switch -c trening-13
+git commit --allow-empty -m "asdf"                  # ❌ отклонён хуком
+git commit --allow-empty -m "feat: проверка хука"   # ✅
+git commit --allow-empty -m "asdf" --no-verify      # ✅ прошёл — хук легко обойти
+rm .git/hooks/commit-msg
+```
+
+**Вывод:** хуки — это удобство для себя. Настоящие проверки делаются в CI на сервере.
+
+### Часть 5. clean
+
+```bash
+echo 1 > musor1.txt && mkdir -p musor && echo 2 > musor/2.txt
+git clean -nd             # ПОКАЗАТЬ, что удалится (привычка: всегда сначала -n). Без d папки не покажет
+git clean -fd             # удалить
+```
+
+**Уборка:**
+
+```bash
+git switch main
+git branch -D trening-13
+```

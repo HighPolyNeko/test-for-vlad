@@ -121,3 +121,141 @@ git rebase --onto main old-base feature  # пересадить ветку: вз
 ```bash
 git log --oneline main..origin/demo/rebase-before
 ```
+
+---
+
+## 🛠 Сделай сам
+
+**Зачем:** неделю пилишь фичу, коммиты вида `wip` и `asdf`, а `main` за это время ушёл вперёд.
+Перед PR тимлид просит: «причеши коммиты и подтяни main». Ревьюер хочет видеть 1–2 понятных коммита
+поверх **свежего** `main`, а не твой поток сознания.
+
+Заготовки:
+- `origin/practice/rebase-feature` — твоя грязная ветка: `фронт: страница профиля`, `wip`, `fix typo`, `asdf`;
+- `origin/practice/rebase-main` — «main»: пока ты работал, туда влили 2 чужих коммита. Один из них правит ту же строку, что и ты.
+
+Нужен настроенный редактор (урок 0).
+
+```bash
+git fetch
+git switch -c trening-rebase origin/practice/rebase-feature
+git lg trening-rebase origin/practice/rebase-main -7    # две ветки разошлись
+```
+
+### Часть 1. Причесать коммиты: `rebase -i`
+
+```bash
+git rebase -i HEAD~4
+```
+
+Откроется редактор со списком. Сверху **старые** коммиты. Поменяй слова в начале строк:
+
+```
+pick   f209eb2 фронт: страница профиля
+fixup  e8c571c wip
+fixup  f04b397 fix typo
+reword 305e6d4 asdf
+```
+
+Сохрани и закрой. Git откроет редактор ещё раз, для `reword`: замени `asdf` на `фронт: поле «О себе»`, сохрани, закрой.
+
+```bash
+git log --oneline -3          # 2 аккуратных коммита вместо 4
+git diff ORIG_HEAD            # ПУСТО: файлы точно такие же, как были, поменялась только история
+```
+
+✅ **Проверь себя:** в ветке два коммита: `фронт: страница профиля` и `фронт: поле «О себе»`. `git diff ORIG_HEAD` пустой.
+
+### Часть 2. Подтянуть main: `rebase` с конфликтом
+
+```bash
+git rebase origin/practice/rebase-main      # CONFLICT
+cat trenirovka/rebase/zadachi.md
+```
+
+```
+<<<<<<< HEAD
+- Кнопка «Войти»                ← это main (!)
+=======
+- Кнопка входа                  ← это твой коммит
+- Страница профиля
+- Аватарка (готово)
+>>>>>>> ... (фронт: страница профиля)
+```
+
+Если в уроке 5 ты включил `zdiff3`, между ними будет ещё блок `|||||||`. Это версия общего предка, «как было до обоих».
+
+👀 Обрати внимание: `HEAD` здесь — это **main**, а не ты. При rebase git стоит на `main`
+и по одному накатывает твои коммиты. Поэтому `ours`/`theirs` здесь наоборот, чем при merge.
+
+Разреши: оставь новое имя кнопки из main и свои строки:
+
+```
+- Кнопка «Войти»
+- Страница профиля
+- Аватарка (готово)
+```
+
+```bash
+git add trenirovka/rebase/zadachi.md
+git rebase --continue          # откроется редактор с сообщением — просто закрой
+git lg -5
+```
+
+✅ **Проверь себя:**
+- история **линейная**, твои 2 коммита стоят поверх `фронтенд: переименовал кнопку`;
+- `git merge-base --is-ancestor origin/practice/rebase-main HEAD && echo "стою на свежем main"` печатает фразу;
+- в файле есть и `API профиля` (из main), и `Поле «О себе»` (твоё).
+
+### Часть 3. Ревьюер нашёл опечатку: `--fixup` + `--autosquash`
+
+Замечание по **первому** коммиту: «напиши "Страница профиля пользователя"». Новый коммит «fix review» — это мусор.
+Правильнее вшить исправление прямо в тот коммит:
+
+```bash
+sed -i 's/^- Страница профиля$/- Страница профиля пользователя/' trenirovka/rebase/zadachi.md
+git commit -a --fixup HEAD~1           # коммит "fixup! фронт: страница профиля"
+git log --oneline -3
+
+git rebase -i --autosquash origin/practice/rebase-main
+# редактор откроется с уже расставленным fixup — просто сохрани и закрой
+git log --oneline -3                   # снова 2 коммита, опечатка вшита в первый
+```
+
+✅ **Проверь себя:** `git show HEAD~1` показывает строку `Страница профиля пользователя` прямо в первом коммите.
+
+### Часть 4. Испугался — как откатить
+
+Запомни две команды:
+
+```bash
+git rebase --abort           # ПОСРЕДИ rebase (например, на конфликте) — вернуть всё как было до начала
+git reset --hard ORIG_HEAD   # rebase уже закончился, но результат не нравится
+```
+
+Попробуй вторую прямо сейчас: откати autosquash из части 3, а потом верни его через reflog (урок 9):
+
+```bash
+git reset --hard ORIG_HEAD   # вернулись к состоянию до autosquash — снова виден коммит "fixup! ..."
+git log --oneline -3
+git reset --hard HEAD@{1}    # HEAD@{1} = "где HEAD был шаг назад" — результат autosquash
+git log --oneline -3         # снова 2 чистых коммита
+```
+
+### Часть 5 🔑. Почему после rebase нужен force-push
+
+```bash
+git branch -m trening-rebase-tvoe-imya         # переименуй ветку: локальное имя = имя на GitHub
+git push -u origin trening-rebase-tvoe-imya
+git commit --amend -m "фронт: поле «О себе» (переписал)"     # переписали историю
+git push                                  # ❌ rejected — на GitHub другая история
+git push --force-with-lease               # ✅
+git push origin --delete trening-rebase-tvoe-imya   # убрать за собой
+```
+
+**Уборка:**
+
+```bash
+git switch main
+git branch -D trening-rebase     # или trening-rebase-tvoe-imya, если делал часть 5
+```
