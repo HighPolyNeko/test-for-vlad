@@ -37,6 +37,7 @@
 | 12 | [Что внутри `.git`](lessons/12-vnutrennosti.md) | `git cat-file -p HEAD` |
 | 13 | [bisect, blame, worktree, hooks и др.](lessons/13-instrumenty.md) | ветка `demo/bisect`: найди коммит, который сломал калькулятор |
 | 14 | [Git в команде: процессы и правила](lessons/14-komanda.md) | теги `v1.0.0` / `v1.0.1` (SemVer) |
+| 15 | [Свой репозиторий с нуля и его защита](lessons/15-svoi-repo.md) | настройки этого репо: CI во вкладке **Actions**, правила в **Settings → Rules**, [шаблон PR](.github/pull_request_template.md), [CODEOWNERS](.github/CODEOWNERS) |
 | 🎤 | **[Вопросы с собеседований](SOBES.md)** | 24 вопроса с ответами + практические задачки |
 
 ## Как выглядит история
