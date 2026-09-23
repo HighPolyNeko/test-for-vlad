@@ -20,7 +20,22 @@
 | 3 | [Ветки](lessons/03-vetki.md) | [PR #1](../../pull/1): ветка с 2 коммитами влита в `main` |
 | 4 | [Push и Pull Request](lessons/04-pull-request.md) | [PR #2](../../pull/2): доработка после ревью — просто ещё один коммит |
 | 5 | [Конфликты](lessons/05-konflikty.md) | [PR #3](../../pull/3) влит без проблем, в [PR #4](../../pull/4) был конфликт в [`pokupki.md`](pokupki.md) (см. комментарий в PR) |
-| 🎯 | **Задание для тебя** | открытый PR во вкладке **Pull requests**: сделай ревью и смержи сам |
+| 🎯 | **Задание для тебя** | открытый [PR #6](../../pull/6): сделай ревью и смержи сам |
+
+### Продвинутый уровень: чтобы не плыть на собесе
+
+| # | Урок | Где посмотреть |
+|---|------|----------------|
+| 6 | [cherry-pick](lessons/06-cherry-pick.md) | фикс из [PR #8](../../pull/8) перенесён в ветку `release/v1.0` через `cherry-pick -x`, вкладка **Releases**: `v1.0.0` → `v1.0.1` |
+| 7 | [rebase и interactive rebase](lessons/07-rebase.md) | [PR #11](../../pull/11): ветка `demo/rebase-before` (5 грязных коммитов) → 2 чистых, влито через **Rebase and merge** |
+| 8 | [Отмена: restore / reset / revert / amend](lessons/08-otmena.md) | вредный совет влит в [PR #9](../../pull/9) и откачен через `git revert -m 1` в [PR #10](../../pull/10) |
+| 9 | [reflog: спасение «потерянного»](lessons/09-reflog.md) | упражнение в уроке |
+| 10 | [stash](lessons/10-stash.md) | — |
+| 11 | [HEAD, `~` и `^`, `..` и `...`, виды мержей](lessons/11-navigaciya.md) | в `main` есть все три вида мержей: merge commit, squash (#5), rebase (#11) |
+| 12 | [Что внутри `.git`](lessons/12-vnutrennosti.md) | `git cat-file -p HEAD` |
+| 13 | [bisect, blame, worktree, hooks и др.](lessons/13-instrumenty.md) | ветка `demo/bisect`: найди коммит, который сломал калькулятор |
+| 14 | [Git в команде: процессы и правила](lessons/14-komanda.md) | теги `v1.0.0` / `v1.0.1` (SemVer) |
+| 🎤 | **[Вопросы с собеседований](SOBES.md)** | 24 вопроса с ответами + практические задачки |
 
 ## Как выглядит история
 
