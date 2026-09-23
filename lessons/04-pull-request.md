@@ -95,7 +95,12 @@ git push                                # просто push — PR обнови�
 
 ### Часть 3. Мерж и уборка
 
-На GitHub нажми **Merge pull request** (вариант *Create a merge commit*), потом **Delete branch**.
+`main` здесь защищён (урок 15): кнопка Merge станет доступна, когда
+- пройдёт CI-проверка `proverka` (вкладка **Checks**, обычно секунд 10–20);
+- владелец репо поставит **Approve**. Свой PR апрувнуть нельзя, так что попроси его, это и есть настоящее ревью;
+- все комментарии будут отмечены **Resolve conversation**.
+
+После этого нажми **Merge pull request** (вариант *Create a merge commit*). Ветка на GitHub удалится сама.
 
 ```bash
 git switch main
