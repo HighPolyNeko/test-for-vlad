@@ -53,3 +53,55 @@ git reflog -3                 # а тут есть!
 git reset --hard HEAD@{1}     # вернули
 git switch main && git branch -D trening-reflog
 ```
+
+---
+
+## 🛠 Сделай сам
+
+**Зачем:** рано или поздно ты сделаешь `reset --hard` не туда, удалишь не ту ветку или неудачно
+отребейзишь. В этот момент важно знать, что почти всё можно вернуть, и не паниковать.
+
+### Часть 1. Удалил ветку с работой
+
+```bash
+git switch -c trening-9 main
+echo "день работы" > reflog.md && git add reflog.md && git commit -m "важная работа 1"
+echo "ещё день" >> reflog.md && git commit -am "важная работа 2"
+
+git switch main
+git branch -D trening-9          # git напечатал "(was abc1234)" — но допустим, ты не посмотрел
+git log --oneline trening-9      # ошибка: такой ветки нет. Паника?
+
+git reflog | grep "важная работа 2"      # вот он, хеш
+git branch trening-9 <хеш>
+git log --oneline -2 trening-9           # обе "важные работы" на месте
+```
+
+✅ Ветка восстановлена с обоими коммитами.
+
+### Часть 2. Чего reflog НЕ спасёт
+
+```bash
+git switch trening-9
+echo "не закоммичено и не добавлено" >> reflog.md
+git reset --hard
+cat reflog.md                    # строки нет, и в reflog её тоже нет — потеряна навсегда
+
+echo "добавлено в staging, но не закоммичено" > spasi.md
+git add spasi.md
+git reset --hard                 # spasi.md исчез
+git fsck --lost-found            # много "dangling ..." — это ничейные объекты, среди них и наш blob
+grep -l "добавлено в staging" .git/lost-found/other/*   # git сложил их содержимое сюда — ищем по тексту
+cat <найденный файл>             # вот оно, живое!
+```
+
+**Вывод:** закоммиченное почти не теряется, добавленное в staging можно откопать, а всё остальное пропадает.
+Поэтому коммить чаще: причесать историю можно потом через `rebase -i`.
+
+**Уборка:**
+
+```bash
+git switch main
+git branch -D trening-9
+rm -rf .git/lost-found
+```

@@ -70,3 +70,95 @@ git merge --abort      # отменить мерж
 git вернёт репозиторий в состояние до мержа.
 
 > 💡 Конфликты — это нормально! Они показывают, что разработка идёт активно.
+
+---
+
+## 🛠 Сделай сам
+
+**Зачем:** в команде два человека постоянно правят одни и те же файлы: конфиги, списки роутов,
+переводы. Конфликт — обычная рабочая ситуация, и разрешать его нужно спокойно, без паники.
+
+### Часть 1. Создай конфликт сам с нуля
+
+```bash
+git switch -c trening-5 main
+echo "Цвет кнопки: синий" > knopka.md
+git add knopka.md && git commit -m "кнопка синяя"
+
+git switch -c trening-5-dizainer        # дизайнер хочет красную
+sed -i 's/синий/красный/' knopka.md
+git commit -am "кнопка красная"
+
+git switch trening-5
+git switch -c trening-5-marketing       # маркетинг хочет зелёную
+sed -i 's/синий/зелёный/' knopka.md
+git commit -am "кнопка зелёная"
+
+git switch trening-5
+git merge trening-5-dizainer            # "Fast-forward" — просто и без конфликта
+git merge trening-5-marketing           # CONFLICT!
+git status                              # "both modified: knopka.md"
+cat knopka.md
+```
+
+Увидишь:
+
+```
+<<<<<<< HEAD
+Цвет кнопки: красный
+=======
+Цвет кнопки: зелёный
+>>>>>>> trening-5-marketing
+```
+
+Открой `knopka.md` в редакторе и реши, что должно остаться. Например, `Цвет кнопки: красный, при наведении зелёный`.
+Удали все строки `<<<<<<<`, `=======`, `>>>>>>>`.
+
+```bash
+git add knopka.md
+git commit -m "Merge: договорились о цвете кнопки"
+git lg -4
+```
+
+✅ **Проверь себя:**
+- в `git lg` виден merge-коммит с двумя родителями («ромбик»);
+- `grep -c "<<<<" knopka.md` выдаёт `0`: маркеров не осталось.
+
+### Часть 2. Передумал: `merge --abort`
+
+```bash
+git reset --hard HEAD~1                 # откатим наш мерж (подробно — урок 8)
+git merge trening-5-marketing           # снова конфликт
+git merge --abort                       # всё, как будто мержа не было
+git status                              # чисто
+```
+
+### Часть 3. Видеть «общего предка»
+
+```bash
+git config --global merge.conflictStyle zdiff3
+git merge trening-5-marketing
+cat knopka.md                           # появился блок ||||||| — как было ДО обеих правок (синий)
+git merge --abort
+```
+
+С `zdiff3` понятно, **кто что поменял**: было «синий», один сделал «красный», другой «зелёный».
+Рекомендую оставить эту настройку насовсем.
+
+### Часть 4. Повтори конфликт из PR #4
+
+```bash
+git switch -c trening-5-pokupki origin/lesson/conflicts-part1   # вариант "Сыр"
+git merge dc33333                                                # вариант "Масло" -> конфликт
+# разреши сам: оставь и Сыр, и Масло
+git add pokupki.md && git commit -m "Merge: оба продукта"
+```
+
+Сравни свой результат с тем, как это разрешили в [PR #4](../../pull/4).
+
+**Уборка:**
+
+```bash
+git switch main
+git branch -D trening-5 trening-5-dizainer trening-5-marketing trening-5-pokupki
+```

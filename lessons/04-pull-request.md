@@ -53,3 +53,61 @@ main:  ○─────────────○  (слита ветка fea
 > git pull          # забрать влитые коммиты
 > git branch -d feature/new-page  # удалить локальную ветку
 > ```
+
+---
+
+## 🛠 Сделай сам 🔑
+
+**Зачем:** в нормальной команде в `main` напрямую не пушат, всё идёт через PR. Так кто-то второй
+смотрит код до того, как он попадёт в продукт, а в истории остаётся обсуждение: почему сделали именно так.
+
+> Нужны права на пуш (Collaborators). Если их нет, нажми **Fork** на GitHub, склонируй свой форк
+> и делай всё там. PR откроется из твоего форка в этот репозиторий.
+
+### Часть 1. Свой первый PR
+
+```bash
+git switch main
+git pull
+git switch -c privet/tvoe-imya          # подставь своё имя латиницей
+
+mkdir -p druzya
+echo "# Привет! Я <имя>, изучаю git" > druzya/tvoe-imya.md
+git add druzya && git commit -m "docs: представился"
+
+git push -u origin privet/tvoe-imya
+```
+
+В ответ на `push` git напечатает ссылку `Create a pull request ... https://github.com/...`.
+Открой её, напиши описание (что сделал и зачем) и нажми **Create pull request**.
+
+### Часть 2. Доработка после ревью
+
+Представь, что ревьюер попросил: «добавь, откуда ты». Никаких новых PR не нужно:
+
+```bash
+echo "Я из <город>" >> druzya/tvoe-imya.md
+git commit -am "docs: добавил город"
+git push                                # просто push — PR обновится сам
+```
+
+Обнови страницу PR: во вкладке **Commits** теперь 2 коммита.
+
+### Часть 3. Мерж и уборка
+
+На GitHub нажми **Merge pull request** (вариант *Create a merge commit*), потом **Delete branch**.
+
+```bash
+git switch main
+git pull                                # забрать свой мерж
+ls druzya                               # твой файл уже в main
+git branch -d privet/tvoe-imya          # -d (маленькая) — удалит, т.к. ветка влита
+git fetch --prune                       # убрать origin/privet/... — ветку на GitHub мы удалили
+git branch -a | grep privet             # пусто
+```
+
+✅ **Проверь себя:** твой PR во вкладке **Closed** с пометкой *Merged*, файл `druzya/<имя>.md` лежит в `main`.
+
+### Часть 4. Побудь ревьюером
+
+Открой [PR #6](../../pull/6) и выполни задание оттуда: оставь комментарий к строке, поставь Approve и смержи.

@@ -90,3 +90,97 @@ A──B          main             A──B──C──D   main, feature
 ```bash
 git config --global merge.conflictStyle zdiff3
 ```
+
+---
+
+## 🛠 Сделай сам
+
+### Часть 1. `^1` и `^2` на настоящем мерже
+
+**Зачем:** при revert мержа (`-m 1`), при cherry-pick мержа и в разборах «что принёс этот мерж»
+нужно понимать, какой родитель чей.
+
+```bash
+git fetch
+M=$(git log origin/main --merges --grep="#4 " --format=%h -1)   # merge-коммит PR #4
+git log --oneline -1 $M          # Merge pull request #4 ...
+git log --oneline -1 $M^1        # первый родитель — main до мержа (мерж PR #3)
+git log --oneline -1 $M^2        # второй родитель — ветка (коммит, где разрешали конфликт)
+git log --oneline -1 $M~2        # два шага назад по ПЕРВЫМ родителям
+git diff --stat $M^1 $M          # что этот мерж принёс в main
+```
+
+✅ Ответь себе: почему `$M^2` и `$M~2` — разные коммиты?
+
+### Часть 2. `..` и `...`
+
+**Зачем:** «что в моей ветке, чего нет в main?» и «что покажет PR?» — вопросы на каждый день.
+
+```bash
+F=origin/practice/rebase-feature
+MAIN=origin/practice/rebase-main
+git log --oneline $MAIN..$F      # 4 коммита — есть в фиче, нет в main
+git log --oneline $F..$MAIN      # 2 коммита — появились в main, пока шла работа
+git log --oneline $MAIN...$F     # все 6 — "только в одной из веток"
+git diff --stat $MAIN...$F       # изменения фичи от общего предка — так считает GitHub в PR
+git diff --stat $MAIN $F         # а это "сравнить два снимка" — сюда попадут и чужие правки main
+```
+
+### Часть 3. Detached HEAD
+
+**Зачем:** ты откроешь тег или старый коммит «посмотреть», закоммитишь там что-нибудь и потеряешь это.
+Разберись один раз, чтобы потом не терять.
+
+```bash
+git switch --detach v1.0.0
+git status                       # "HEAD detached at v1.0.0"
+echo "эксперимент" > eksperiment.md
+git add eksperiment.md && git commit -m "эксперимент на старой версии"
+git switch main                  # git ПРЕДУПРЕДИТ: "you are leaving 1 commit behind" + хеш
+git branch trening-11-spasen <хеш из предупреждения>
+git log --oneline -1 trening-11-spasen
+```
+
+### Часть 4. Fast-forward vs `--no-ff`
+
+```bash
+git switch -c trening-11 main
+git switch -c trening-11-ff
+echo x > ff.md && git add ff.md && git commit -m "ff коммит"
+
+git switch trening-11
+git merge trening-11-ff          # "Fast-forward"
+git lg -3                        # прямая линия, merge-коммита нет
+
+git reset --hard ORIG_HEAD       # откатим
+git merge --no-ff trening-11-ff -m "Merge trening-11-ff"
+git lg -3                        # "ромбик" — видно, что была ветка
+```
+
+### Часть 5. Ловушка после squash
+
+**Зачем:** на работе PR часто мержат через Squash. После этого у многих ломается `git branch -d`,
+а в старой ветке вылезают странные конфликты.
+
+```bash
+git switch -c trening-11-sq trening-11
+echo 1 > sq.md && git add sq.md && git commit -m "sq 1"
+echo 2 >> sq.md && git commit -am "sq 2"
+
+git switch trening-11
+git merge --squash trening-11-sq
+git commit -m "фича одним коммитом"
+git lg -3                        # один коммит, никакой связи с веткой trening-11-sq
+
+git branch -d trening-11-sq      # error: not fully merged!
+```
+
+Git прав: коммитов `sq 1` и `sq 2` в ветке нет, есть **другой** коммит с теми же изменениями.
+Удалять придётся через `-D`.
+
+**Уборка:**
+
+```bash
+git switch main
+git branch -D trening-11 trening-11-ff trening-11-sq trening-11-spasen
+```
